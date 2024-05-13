@@ -56,7 +56,7 @@ class Linkedin(object):
         *,
         authenticate=True,
         refresh_cookies=False,
-        debug=False,
+        debug=True,
         proxies={},
         cookies=None,
         cookies_dir=None,
@@ -101,7 +101,7 @@ class Linkedin(object):
         url = f"{self.client.API_BASE_URL if not base_request else self.client.LINKEDIN_BASE_URL}{uri}"
         return self.client.session.post(url, **kwargs)
 
-    def get_profile_posts(self, public_id=None, urn_id=None, post_count=10):
+    def get_profile_posts(self, public_id=None, urn_id=None, post_offset=0, post_count=10 ):
         """
         get_profile_posts: Get profile posts
 
@@ -116,7 +116,7 @@ class Linkedin(object):
         """
         url_params = {
             "count": min(post_count, self._MAX_POST_COUNT),
-            "start": 0,
+            "start": post_offset,
             "q": "memberShareFeed",
             "moduleKey": "member-shares:phone",
             "includeLongTermHistory": True,
@@ -139,7 +139,7 @@ class Linkedin(object):
             if len(data["elements"]) >= post_count:
                 break
             pagination_token = data["metadata"]["paginationToken"]
-            url_params["start"] = url_params["start"] + self._MAX_POST_COUNT
+            url_params["start"] = post_offset + self._MAX_POST_COUNT
             url_params["paginationToken"] = pagination_token
             res = self._fetch(url, params=url_params)
             data["metadata"] = res.json()["metadata"]
@@ -171,13 +171,27 @@ class Linkedin(object):
         if data and "status" in data and data["status"] != 200:
             self.logger.info("request failed: {}".format(data["status"]))
             return {}
-        while data and data["metadata"]["paginationToken"] != "":
+        
+        self.logger.info("Metadata :: {}".format(data["metadata"]))
+        
+        # while data and data["metadata"]["paginationToken"] != "":
+        while data :
+
             if len(data["elements"]) >= comment_count:
                 break
-            pagination_token = data["metadata"]["paginationToken"]
+            if data["metadata"] :
+                break
+            
+            if len(data["metadata"]) == 0:
+                break
+            
+            if data["metadata"]["paginationToken"]:
+                pagination_token = data["metadata"]["paginationToken"]
+                url_params["paginationToken"] = pagination_token
+            
             url_params["start"] = url_params["start"] + self._MAX_POST_COUNT
             url_params["count"] = self._MAX_POST_COUNT
-            url_params["paginationToken"] = pagination_token
+            
             res = self._fetch(url, params=url_params)
             if res.json() and "status" in res.json() and res.json()["status"] != 200:
                 self.logger.info("request failed: {}".format(data["status"]))
