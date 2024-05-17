@@ -11,7 +11,7 @@ profile_id = "ashishtanwar"
 
 def getTsFromPostId(post_id):
     link_ts = x=str(bin(int(post_id)))[2:43]
-    return datetime.fromtimestamp(1715409426902 / 1e3)
+    return datetime.fromtimestamp(post_id / 1e3)
 
 
 def getPosts():
