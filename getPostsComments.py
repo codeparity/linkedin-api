@@ -6,15 +6,24 @@ from datetime import date
 import json
 import os.path
 
-linkedin = Linkedin("username", "password")
-profile_id = "ashishtanwar"
+import os
+import sys
+from linkedin_api.client import Client
+
+TEST_LINKEDIN_USERNAME = os.getenv("LINKEDIN_USERNAME")
+TEST_LINKEDIN_PASSWORD = os.getenv("LINKEDIN_PASSWORD")
+TEST_LINKEDIN_PROFILE = os.getenv("TEST_PROFILE_ID")
+
+linkedin = Linkedin(TEST_LINKEDIN_USERNAME, TEST_LINKEDIN_PASSWORD)
+profile_id = TEST_LINKEDIN_PROFILE
 
 def getTsFromPostId(post_id):
-    link_ts = x=str(bin(int(post_id)))[2:43]
-    return datetime.fromtimestamp(link_ts / 1e3)
+    link_ts_str = str(bin(int(post_id)))[2:43]
+    ts = int(link_ts_str, 2)
+    return datetime.fromtimestamp( ts / 1e3)
 
 
-def getPosts():
+def getPosts(fname):
 
     # profile = linkedin.get_profile(profile_id)
     # profile["contact_info"] = linkedin.get_profile_contact_info(
@@ -23,14 +32,14 @@ def getPosts():
     #
     # print(profile)
 
-    for i in range(100):
+    for i in range(2):
         posts=linkedin.get_profile_posts(profile_id,post_offset=i,post_count=i*100)
 
         # pprint.pp(posts)
 
         # print(posts)
-        ts = date.today().strftime("%b-%d-%Y")
-        with open("post"+ts+".log", 'w') as file:
+        
+        with open(fname, 'w') as file:
             file.write(json.dumps(posts))
         
         for post in posts:
@@ -45,14 +54,14 @@ def getPosts():
             print(post_ts)
         
     
-def getComments():
-    with open("postMay-13-2024.log", 'r') as file:
+def getComments(posts_fname):
+    with open(posts_fname, 'r') as file:
         posts = json.loads(file.read())
 
     for post in posts:
         post_urn = post['socialDetail']['urn'].split(":")[3]
     
-        comments_file="comments"+post_urn+".log"
+        comments_file="comments_"+post_urn+".log"
             #pprint.pp(comments)
         if os.path.isfile(comments_file) :
             print('Comments file exist, so skipping: '+comments_file)
@@ -79,6 +88,9 @@ def getComments():
 
 
 
+ts = date.today().strftime("%b-%d-%Y")
+posts_fname ="posts_"+ts+".json"
+getPosts(posts_fname)
 
-# getPosts()
-getComments()
+
+getComments(posts_fname)
